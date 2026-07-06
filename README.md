@@ -27,8 +27,15 @@ The vision pipeline will process the image to extract two distinct vectors: iden
 
 Step 3: Logic Integration & App Features
 This layer acts as the software "brain," mapping computer vision outputs to the database to deliver actionable user insights.
+
 App Feature	Vision Input Source	Backend Logic / Database Mapping
+
 1. Environment Identification	Model 1 identifies species (e.g., Snake Plant).	Queries the knowledge base (Step 1B) to display "Type: Indoor".
+   
 2. Watering Assessment	Model 2 detects physical cues (e.g., Wilting or Dry soil surface).	Cross-references visual cues with the plant's baseline watering schedule from the database to generate an actionable response (e.g., "Needs water immediately").
+
 3. Health & Improvement Plan	Model 2 outputs health diagnostic (e.g., Leaf Burn).	Triggers a targeted care protocol from the database or leverages an LLM API to output tailored recovery instructions (e.g., "Move away from direct sunlight; prune scorched edges.").
- 
+
+Plan for dataset
+1. Plantdoc
+2. Leafsmap 
