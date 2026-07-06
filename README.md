@@ -3,9 +3,10 @@ Plant Care AI App: Master Project Plan
 This master plan outlines the step-by-step development strategy for a computer vision-based plant care application. The architecture separates visual recognition from structured plant care data to maximize model accuracy and app performance.
  Step 1: Data Collection & Preparation
 Instead of searching for a single dataset containing all visual and care attributes, the project will combine a visual dataset with a structured plant knowledge base.
+
 ●	1A. Image Dataset Procurement: Source established visual datasets such as PlantDoc (for health/disease detection) or Pl@ntNet / Leafsnap (for species identification) via platforms like Kaggle
 
-●	1B. Structured Care Knowledge Base: Create or source a structured reference dataset (CSV or JSON format) mapping plant species to their specific care rules:
+●	1B. Structured Care Knowledge Base: Source a structured reference dataset (CSV or JSON format) mapping plant species to their specific care rules:
 ○	Plant Name → Environment Type (Indoor / Outdoor)
 ○	Plant Name → Watering Frequency & Requirements
 
