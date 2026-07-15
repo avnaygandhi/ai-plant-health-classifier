@@ -39,3 +39,6 @@ App Feature	Vision Input Source	Backend Logic / Database Mapping
 Plan for dataset
 1. Plantdoc
 2. Leafsmap 
+
+## Project Status
+* Currently optimizing the EfficientNet_B0 baseline model (Target: 90%+ Accuracy).
