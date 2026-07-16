@@ -41,4 +41,4 @@ Plan for dataset
 2. Leafsmap 
 
 ## Project Status
-* Currently optimizing the EfficientNet_B0 baseline model (Target: 90%+ Accuracy).
+* Exploring confidence intervals and preparing for model fine-tuning.
