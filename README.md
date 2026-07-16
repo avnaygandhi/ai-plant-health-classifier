@@ -42,3 +42,7 @@ Plan for dataset
 
 ## Project Status
 * Exploring confidence intervals and preparing for model fine-tuning.
+
+# Next Steps
+- [ ] Improve model accuracy past 90%
+- [ ] Build species identification mapping
