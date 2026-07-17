@@ -46,3 +46,8 @@ Plan for dataset
 # Next Steps
 - [ ] Improve model accuracy past 90%
 - [ ] Build species identification mapping
+
+## Upcoming Statistics I will do
+* [ ] Hypothesis Testing
+* [ ] Understanding P-values and Statistical Significance
+* [ ] Calculating Type I and Type II errors in model predictions
