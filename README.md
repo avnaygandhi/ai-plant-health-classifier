@@ -41,4 +41,13 @@ Plan for dataset
 2. Leafsmap 
 
 ## Project Status
-* Currently optimizing the EfficientNet_B0 baseline model (Target: 90%+ Accuracy).
+* Exploring confidence intervals and preparing for model fine-tuning.
+
+# Next Steps
+- [ ] Improve model accuracy past 90%
+- [ ] Build species identification mapping
+
+## Upcoming Statistics I will do
+* [ ] Hypothesis Testing
+* [ ] Understanding P-values and Statistical Significance
+* [ ] Calculating Type I and Type II errors in model predictions
