@@ -51,3 +51,7 @@ Plan for dataset
 * [ ] Hypothesis Testing
 * [ ] Understanding P-values and Statistical Significance
 * [ ] Calculating Type I and Type II errors in model predictions
+
+## Active Development
+* **Model Architecture Upgrades:** Expanded the classifier head with an extra dense layer (512 nodes) and implemented Dropout to prevent overfitting.
+* **Fine-Tuning Strategy:** Unfroze Stage 7 of the EfficientNet_B0 backbone and configured differential learning rates ($lr=0.0001$ for backbone, $lr=0.001$ for classifier head) to gently adapt weights.
