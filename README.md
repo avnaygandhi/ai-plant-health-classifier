@@ -47,6 +47,8 @@ Plan for dataset
 - [ ] Improve model accuracy past 90%
 - [ ] Build species identification mapping
 
+**Next Action:** Resume 35-epoch EfficientNet fine-tuning once disk cleanup is finalized.
+
 ## Upcoming Statistics I will do
 * [ ] Hypothesis Testing
 * [ ] Understanding P-values and Statistical Significance
