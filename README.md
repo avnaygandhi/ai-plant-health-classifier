@@ -46,7 +46,7 @@ Plan for dataset
 # Next Steps
 - [ ] Improve model accuracy past 90%
 - [ ] Build species identification mapping
-- [*] Resume 35-epoch EfficientNet fine-tuning
+- [x] Complete 35-epoch EfficientNet fine-tuning
 ## Latest Fine-Tuning Benchmark (35 Epochs - Stage 7 Unfrozen)
 * **Final Training Loss:** 0.5418 | **Training Accuracy:** 82.39%
 * **Final Validation Loss:** 1.5539 | **Validation Accuracy:** 57.12%
