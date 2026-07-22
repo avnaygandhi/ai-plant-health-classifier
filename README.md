@@ -46,8 +46,11 @@ Plan for dataset
 # Next Steps
 - [ ] Improve model accuracy past 90%
 - [ ] Build species identification mapping
-
-**Next Action:** Resume 35-epoch EfficientNet fine-tuning once disk cleanup is finalized.
+- [*] Resume 35-epoch EfficientNet fine-tuning
+## Latest Fine-Tuning Benchmark (35 Epochs - Stage 7 Unfrozen)
+* **Final Training Loss:** 0.5418 | **Training Accuracy:** 82.39%
+* **Final Validation Loss:** 1.5539 | **Validation Accuracy:** 57.12%
+* **Key Insight:** Training accuracy increased smoothly from 28.82% to 82.39%. However, validation accuracy plateaued around ~57%, indicating clear overfitting that requires data augmentation and stronger regularization before pushing for 90%.
 
 ## Upcoming Statistics I will do
 * [ ] Hypothesis Testing
