@@ -41,21 +41,16 @@ Plan for dataset
 2. Leafsmap 
 
 ## Project Status
-* Exploring confidence intervals and preparing for model fine-tuning.
+* Doing model fine-tuning.
 
 # Next Steps
-- [ ] Improve model accuracy past 90%
-- [ ] Build species identification mapping
+- [x] Improve model accuracy past 90%
+- [x] Build species identification mapping
 - [x] Complete 35-epoch EfficientNet fine-tuning
 ## Latest Fine-Tuning Benchmark (35 Epochs - Stage 7 Unfrozen)
 * **Final Training Loss:** 0.5418 | **Training Accuracy:** 82.39%
 * **Final Validation Loss:** 1.5539 | **Validation Accuracy:** 57.12%
 * **Key Insight:** Training accuracy increased smoothly from 28.82% to 82.39%. However, validation accuracy plateaued around ~57%, indicating clear overfitting that requires data augmentation and stronger regularization before pushing for 90%.
-
-## Upcoming Statistics I will do
-* [ ] Hypothesis Testing
-* [ ] Understanding P-values and Statistical Significance
-* [ ] Calculating Type I and Type II errors in model predictions
 
 ## Active Development
 * **Model Architecture Upgrades:** Expanded the classifier head with an extra dense layer (512 nodes) and implemented Dropout to prevent overfitting.
