@@ -11,11 +11,8 @@ app = FastAPI(title="Plant Classifier API")
 classifier = PlantClassifier()
 
 @app.get("/")
-def home():
-    return {
-        "message": "Plant AI API is active. Go to /docs to test endpoints.",
-        "status": "Online",
-    }
+def root():
+    return {"status": "Online", "service": "Plant Classification API"}
 
 @app.post("/predict")
 async def predict_plant(file: UploadFile = File(...)):
