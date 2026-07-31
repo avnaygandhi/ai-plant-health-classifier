@@ -40,6 +40,7 @@ Plan for dataset
 1. Plantdoc
 2. Leafsmap 
 
+
 ## Project Status
 * Doing model fine-tuning.
 
@@ -61,3 +62,8 @@ Plan for dataset
 ## Active Development
 * **Model Architecture Upgrades:** Expanded the classifier head with an extra dense layer (512 nodes) and implemented Dropout to prevent overfitting.
 * **Fine-Tuning Strategy:** Unfroze Stage 7 of the EfficientNet_B0 backbone and configured differential learning rates ($lr=0.0001$ for backbone, $lr=0.001$ for classifier head) to gently adapt weights.
+
+
+## 🐳 Containerization & Deployment
+
+This application is fully dockerized using a multi-service setup. Both the **FastAPI backend** (PyTorch inference server) and the **Streamlit frontend** are packaged into an isolated Docker container for seamless execution across Mac, Windows, and Linux environments.
