@@ -1,9 +1,0 @@
-.git
-.gitignore
-.ipynb_checkpoints
-*.png
-*.jpg
-*.jpeg
-backend.log
-frontend.log
-__pycache__/
