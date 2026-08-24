@@ -1,5 +1,7 @@
 import io
+import os
 from pathlib import Path
+import urllib.request
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from PIL import Image
 import torch
@@ -27,12 +29,43 @@ else:
     device = torch.device("cpu")
     print("ℹ️ Using CPU fallback")
 
-# Anchors path relative to Plant_project root folder
 BASE_DIR = Path(__file__).resolve().parent.parent
+MODELS_DIR = BASE_DIR / "models"
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Define local target paths (Path objects)
+HEALTH_MODEL_PATH = MODELS_DIR / "best_health_model_v3.pth"
+SPECIES_MODEL_PATH = MODELS_DIR / "species_efficientnet_b0_full.pth"
+
+# AWS S3 Direct Download URLs
+HEALTH_S3_URL = "https://plant-ai-weights-avnay.s3.ap-southeast-1.amazonaws.com/best_health_model_v3.pth"
+SPECIES_S3_URL = "https://plant-ai-weights-avnay.s3.ap-southeast-1.amazonaws.com/species_efficientnet_b0_full.pth"
+
+
+def download_s3_weights():
+    # 1. Download Health Model from S3 if missing locally
+    if not HEALTH_MODEL_PATH.exists():
+        print("☁️ Fetching Health Model from AWS S3...")
+        try:
+            urllib.request.urlretrieve(HEALTH_S3_URL, HEALTH_MODEL_PATH)
+            print("✅ Health Model downloaded from AWS S3 successfully!")
+        except Exception as e:
+            print(f"⚠️ Failed to download Health Model from S3: {e}")
+
+    # 2. Download Species Model from S3 if missing locally
+    if not SPECIES_MODEL_PATH.exists():
+        print("☁️ Fetching Species Model from AWS S3...")
+        try:
+            urllib.request.urlretrieve(SPECIES_S3_URL, SPECIES_MODEL_PATH)
+            print("✅ Species Model downloaded from AWS S3 successfully!")
+        except Exception as e:
+            print(f"ℹ️ Species model not yet available on S3 (will use fallback).")
+
+
+download_s3_weights()
 
 
 # --- 1. MODEL ARCHITECTURES ---
-
 class PlantHealthConvNeXt(nn.Module):
     def __init__(self, num_classes=38):
         super().__init__()
@@ -61,9 +94,8 @@ class PlantSpeciesEfficientNet(nn.Module):
         return self.backbone(x)
 
 
-# --- 2. LOAD ALL 38 CLASS LABELS ---
+# --- 2. LOAD CLASS LABELS ---
 def load_labels():
-    # Search for data.yaml in Plant_project_data or project root
     possible_yaml_paths = [
         BASE_DIR / "Plant_project_data" / "data.yaml",
         BASE_DIR / "data.yaml",
@@ -77,48 +109,40 @@ def load_labels():
                 if isinstance(names, dict):
                     names = [names[i] for i in sorted(names.keys())]
                 if len(names) == 38:
-                    print(f"✅ Loaded 38 class names from {yaml_path}")
                     return names
 
-    print("⚠️ Full data.yaml not found or incomplete. Using 38-class fallback list.")
-    # Full 38 PlantDoc/PlantVillage Class List
     return [
         "Apple Scab Leaf", "Apple leaf", "Apple rust leaf", "Bell_pepper leaf spot",
         "Bell_pepper leaf", "Blueberry leaf", "Cherry leaf", "Corn Gray leaf spot",
         "Corn leaf blight", "Corn rust leaf", "Peach leaf", "Potato leaf early blight",
         "Potato leaf late blight", "Potato leaf", "Raspberry leaf", "Soyabean leaf",
         "Soybean leaf", "Squash Powdery mildew leaf", "Strawberry leaf",
-        "Tomato Early blight leaf", "Tomato Septoria leaf spot", "Tomato leaf bacterial spot",
-        "Tomato leaf late blight", "Tomato leaf mosaic virus", "Tomato leaf yellow virus",
-        "Tomato leaf", "Tomato mold leaf", "Tomato two spotted spider mites leaf",
+        "Tomato Early blight leaf", "Tomato Septoria leaf spot",
+        "Tomato leaf bacterial spot", "Tomato leaf late blight",
+        "Tomato leaf mosaic virus", "Tomato leaf yellow virus", "Tomato leaf",
+        "Tomato mold leaf", "Tomato two spotted spider mites leaf",
         "grape leaf black rot", "grape leaf", "Apple Black Rot", "Apple Healthy",
         "Cedar Apple Rust", "Cherry Healthy", "Corn Healthy", "Peach Healthy",
-        "Pepper Bell Healthy", "Potato Healthy"
+        "Pepper Bell Healthy", "Potato Healthy",
     ]
 
 
 CLASS_LABELS = load_labels()
+NUM_CLASSES = 38
 
-# Explicitly ensure num_classes is 38 to match model weights checkpoint shape
-NUM_HEALTH_CLASSES = 38
-
-# --- 3. MODEL INITIALIZATION & WEIGHT LOADING ---
-HEALTH_MODEL_PATH = BASE_DIR / "models" / "best_health_model_v3.pth"
-SPECIES_MODEL_PATH = BASE_DIR / "models" / "species_efficientnet_b0_full.pth"
-
-# Health Model (Hardcoded to 38 classes so state_dict always matches)
-health_model = PlantHealthConvNeXt(num_classes=NUM_HEALTH_CLASSES).to(device)
+# --- 3. INITIALIZE MODELS & LOAD CHECKPOINTS ---
+health_model = PlantHealthConvNeXt(num_classes=NUM_CLASSES).to(device)
 if HEALTH_MODEL_PATH.exists():
-    health_model.load_state_dict(
-        torch.load(HEALTH_MODEL_PATH, map_location=device, weights_only=True)
-    )
-    health_model.eval()
-    print(f"✅ Loaded Health Model from {HEALTH_MODEL_PATH}")
-else:
-    print(f"⚠️ Health model missing at {HEALTH_MODEL_PATH}")
+    try:
+        health_model.load_state_dict(
+            torch.load(HEALTH_MODEL_PATH, map_location=device, weights_only=True)
+        )
+        health_model.eval()
+        print(f"✅ Loaded Health Model from {HEALTH_MODEL_PATH}")
+    except Exception as e:
+        print(f"⚠️ Error loading Health Model state_dict: {e}")
 
-# Species Model
-species_model = PlantSpeciesEfficientNet(num_classes=NUM_HEALTH_CLASSES).to(device)
+species_model = PlantSpeciesEfficientNet(num_classes=NUM_CLASSES).to(device)
 if SPECIES_MODEL_PATH.exists():
     try:
         species_model.load_state_dict(
@@ -127,10 +151,11 @@ if SPECIES_MODEL_PATH.exists():
         species_model.eval()
         print(f"✅ Loaded Species Model from {SPECIES_MODEL_PATH}")
     except Exception as e:
-        print(f"⚠️ Could not load species model due to architecture/weight mismatch: {e}")
+        print(f"⚠️ Error loading Species Model state_dict: {e}")
         species_model = None
 else:
-    print(f"⚠️ Species model missing at {SPECIES_MODEL_PATH}")
+    print("ℹ️ Species model checkpoint missing. Using health model fallback for taxonomy.")
+    species_model = None
 
 # --- 4. PREPROCESSING ---
 transform = transforms.Compose([
@@ -148,17 +173,14 @@ async def predict(file: UploadFile = File(...)):
     try:
         contents = await file.read()
         image = Image.open(io.BytesIO(contents)).convert("RGB")
-
         input_tensor = transform(image).unsqueeze(0).to(device)
 
         with torch.no_grad():
-            # 1. Health Diagnosis Prediction
             health_logits = health_model(input_tensor)
             health_probs = F.softmax(health_logits, dim=1)
             h_conf, h_idx = torch.max(health_probs, 1)
 
-            # 2. Species Prediction
-            if SPECIES_MODEL_PATH.exists() and species_model is not None:
+            if species_model is not None:
                 species_logits = species_model(input_tensor)
                 species_probs = F.softmax(species_logits, dim=1)
                 s_conf, s_idx = torch.max(species_probs, 1)
@@ -169,7 +191,6 @@ async def predict(file: UploadFile = File(...)):
                 )
                 species_confidence = f"{s_conf.item() * 100:.2f}%"
             else:
-                # Fallback: Extract plant name from health class prediction (e.g. "Apple Scab Leaf" -> "Apple")
                 species_label = CLASS_LABELS[h_idx.item()].split()[0]
                 species_confidence = f"{h_conf.item() * 100:.2f}%"
 
