@@ -20,7 +20,7 @@ if str(ROOT_DIR) not in sys.path:
 
 # Import your FastAPI app
 from Backend.main import app
-`
+
 
 
 # --- BACKGROUND FASTAPI SERVER ---
