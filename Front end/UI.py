@@ -8,19 +8,7 @@ from pathlib import Path
 import requests
 import streamlit as st
 import uvicorn
-
-# --- FIX FOR MODULE NOT FOUND ERROR ---
-# Add the project root directory to Python's path so Streamlit Cloud can locate the Backend folder
-FILE_PATH = Path(__file__).resolve()
-ROOT_DIR = FILE_PATH.parent.parent
-
-# Add root directory to sys.path so 'Backend' can be imported
-if str(ROOT_DIR) not in sys.path:
-  sys.path.insert(0, str(ROOT_DIR))
-
-# Import your FastAPI app
-from Backend.app import app
-
+from app import app
 
 
 # --- BACKGROUND FASTAPI SERVER ---
