@@ -6,7 +6,7 @@ import threading
 import time
 from pathlib import Path
 import requests
-import Streamlit as st
+import streamlit as st
 import uvicorn
 from PIL import Image
 
