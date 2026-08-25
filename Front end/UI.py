@@ -1,7 +1,5 @@
 import io
-import os
 import re
-import signal
 import threading
 import time
 from pathlib import Path
@@ -57,10 +55,6 @@ with st.sidebar:
   st.header("Application Controls")
   st.info("Backend Status: **Active**\n\nAPI Server: `http://127.0.0.1:8000/predict`")
   st.divider()
-
-  if st.button("🛑 Stop Server & Exit", use_container_width=True):
-    st.warning("Shutting down session...")
-    os.kill(os.getpid(), signal.SIGTERM)
 
 # Select Input Mode for Mobile Compatibility
 input_mode = st.radio(

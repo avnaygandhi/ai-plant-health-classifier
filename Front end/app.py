@@ -81,17 +81,21 @@ class PlantHealthConvNeXt(nn.Module):
         return self.backbone(x)
 
 
-class PlantSpeciesEfficientNet(nn.Module):
-    def __init__(self, num_classes=38):
-        super().__init__()
-        weights = EfficientNet_B0_Weights.DEFAULT
-        self.backbone = efficientnet_b0(weights=weights)
-
-        in_features = self.backbone.classifier[1].in_features
-        self.backbone.classifier[1] = nn.Linear(in_features, num_classes)
-
-    def forward(self, x):
-        return self.backbone(x)
+def build_species_model(num_classes=25):
+    """Matches the plain (unwrapped) efficientnet_b0 architecture the
+    species checkpoint was trained and saved with — no `backbone`/`model`
+    submodule nesting, since the checkpoint's keys are top-level
+    ("features.*", "classifier.*")."""
+    weights = EfficientNet_B0_Weights.DEFAULT
+    model = efficientnet_b0(weights=weights)
+    model.classifier = nn.Sequential(
+        nn.Dropout(p=0.3, inplace=True),
+        nn.Linear(in_features=1280, out_features=512),
+        nn.ReLU(),
+        nn.Dropout(p=0.3),
+        nn.Linear(in_features=512, out_features=num_classes),
+    )
+    return model
 
 
 # --- 2. LOAD CLASS LABELS ---
@@ -127,8 +131,19 @@ def load_labels():
     ]
 
 
+def load_species_labels():
+    leafsnap_dir = BASE_DIR / "leafsnap_data" / "train"
+    if leafsnap_dir.exists():
+        names = sorted(p.name for p in leafsnap_dir.iterdir() if p.is_dir())
+        if names:
+            return [n.replace("_", " ").title() for n in names[:NUM_SPECIES_CLASSES]]
+    return [f"Species {i + 1}" for i in range(NUM_SPECIES_CLASSES)]
+
+
 CLASS_LABELS = load_labels()
 NUM_CLASSES = 38
+NUM_SPECIES_CLASSES = 25
+SPECIES_LABELS = load_species_labels()
 
 # --- 3. INITIALIZE MODELS & LOAD CHECKPOINTS ---
 health_model = PlantHealthConvNeXt(num_classes=NUM_CLASSES).to(device)
@@ -142,7 +157,7 @@ if HEALTH_MODEL_PATH.exists():
     except Exception as e:
         print(f"⚠️ Error loading Health Model state_dict: {e}")
 
-species_model = PlantSpeciesEfficientNet(num_classes=NUM_CLASSES).to(device)
+species_model = build_species_model(num_classes=NUM_SPECIES_CLASSES).to(device)
 if SPECIES_MODEL_PATH.exists():
     try:
         species_model.load_state_dict(
@@ -185,8 +200,8 @@ async def predict(file: UploadFile = File(...)):
                 species_probs = F.softmax(species_logits, dim=1)
                 s_conf, s_idx = torch.max(species_probs, 1)
                 species_label = (
-                    CLASS_LABELS[s_idx.item()]
-                    if s_idx.item() < len(CLASS_LABELS)
+                    SPECIES_LABELS[s_idx.item()]
+                    if s_idx.item() < len(SPECIES_LABELS)
                     else "Unknown Plant"
                 )
                 species_confidence = f"{s_conf.item() * 100:.2f}%"
