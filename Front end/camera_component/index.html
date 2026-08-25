@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://unpkg.com/streamlit-component-lib/dist/streamlit-component-lib.js"></script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -26,15 +25,10 @@
       cursor: pointer;
       border: none;
       user-select: none;
-      transition: background 0.15s;
     }
     .open-btn:hover { background-color: #1B5E20; }
     #preview-wrap { margin-top: 12px; display: none; }
-    #preview {
-      max-width: 100%;
-      border-radius: 10px;
-      display: block;
-    }
+    #preview { max-width: 100%; border-radius: 10px; display: block; }
     .retake-btn {
       margin-top: 8px;
       background: #555;
@@ -46,13 +40,11 @@
       cursor: pointer;
       font-weight: 500;
     }
-    .retake-btn:hover { background: #333; }
   </style>
 </head>
 <body>
   <label class="open-btn" for="camera-input">📷 Open Rear Camera</label>
   <input type="file" id="camera-input" accept="image/*" capture="environment">
-
   <div id="preview-wrap">
     <img id="preview" alt="Captured photo">
     <br>
@@ -60,29 +52,37 @@
   </div>
 
   <script>
+    // Inline Streamlit component protocol — no external CDN needed
+    var Streamlit = {
+      setComponentReady: function () {
+        window.parent.postMessage({ type: "streamlit:componentReady", apiVersion: 1 }, "*");
+      },
+      setComponentValue: function (value) {
+        window.parent.postMessage({ type: "streamlit:setComponentValue", value: value }, "*");
+      },
+      setFrameHeight: function (height) {
+        window.parent.postMessage({ type: "streamlit:setFrameHeight", height: height }, "*");
+      }
+    };
+
     Streamlit.setComponentReady();
     Streamlit.setFrameHeight(54);
 
-    const input = document.getElementById("camera-input");
-    const previewWrap = document.getElementById("preview-wrap");
-    const preview = document.getElementById("preview");
-    const retakeBtn = document.getElementById("retake-btn");
-
-    function updateHeight() {
-      requestAnimationFrame(() => {
-        Streamlit.setFrameHeight(document.body.scrollHeight + 8);
-      });
-    }
+    var input = document.getElementById("camera-input");
+    var previewWrap = document.getElementById("preview-wrap");
+    var preview = document.getElementById("preview");
+    var retakeBtn = document.getElementById("retake-btn");
 
     input.addEventListener("change", function () {
-      const file = this.files[0];
+      var file = this.files[0];
       if (!file) return;
-      const reader = new FileReader();
+      var reader = new FileReader();
       reader.onload = function (e) {
         preview.src = e.target.result;
         previewWrap.style.display = "block";
-        updateHeight();
-        // Return the data-URL so Python can decode it
+        setTimeout(function () {
+          Streamlit.setFrameHeight(document.body.scrollHeight + 8);
+        }, 120);
         Streamlit.setComponentValue(e.target.result);
       };
       reader.readAsDataURL(file);
