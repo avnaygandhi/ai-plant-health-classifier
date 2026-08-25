@@ -9,3 +9,4 @@ numpy
 jinja2
 python-multipart
 requests
+PyYAML
