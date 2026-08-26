@@ -1,23 +1,14 @@
-import base64
 import io
 import re
 import threading
 import time
-from pathlib import Path
 import requests
 import streamlit as st
-import streamlit.components.v1 as components
 import uvicorn
 from PIL import Image
 
 # Import FastAPI app directly from app.py in the same directory
 from app import app
-
-# Custom component: native rear camera via capture="environment"
-_rear_camera = components.declare_component(
-    "rear_camera",
-    path=str(Path(__file__).parent / "camera_component"),
-)
 
 
 # --- BACKGROUND FASTAPI SERVER ---
@@ -82,11 +73,10 @@ if input_mode == "Upload File":
     selected_image_bytes = uploaded_file.getvalue()
     image_filename = uploaded_file.name
 else:
-  # Returns a data-URL string ("data:image/jpeg;base64,...") or None
-  camera_data = _rear_camera(key="rear_camera", default=None)
-  if camera_data is not None:
-    _, b64 = camera_data.split(",", 1)
-    selected_image_bytes = base64.b64decode(b64)
+  # Native Streamlit camera widget compatible with mobile permissions
+  camera_file = st.camera_input("Take a photo of the plant leaf")
+  if camera_file is not None:
+    selected_image_bytes = camera_file.getvalue()
     image_filename = "camera_capture.jpg"
 
 # Process when image data is available
