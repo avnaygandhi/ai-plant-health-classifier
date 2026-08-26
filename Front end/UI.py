@@ -55,7 +55,6 @@ with st.sidebar:
   st.info("Backend Status: **Active**\n\nAPI Server: `http://127.0.0.1:8000/predict`")
   st.divider()
 
-# Select Input Mode for Mobile Compatibility
 input_mode = st.radio(
     "Choose Input Method:",
     ["Upload File", "Take Photo with Camera"],
@@ -73,13 +72,11 @@ if input_mode == "Upload File":
     selected_image_bytes = uploaded_file.getvalue()
     image_filename = uploaded_file.name
 else:
-  # Native Streamlit camera widget compatible with mobile permissions
   camera_file = st.camera_input("Take a photo of the plant leaf")
   if camera_file is not None:
     selected_image_bytes = camera_file.getvalue()
     image_filename = "camera_capture.jpg"
 
-# Process when image data is available
 if selected_image_bytes is not None:
   col1, col2 = st.columns([1, 1.2], gap="large")
 
@@ -92,7 +89,6 @@ if selected_image_bytes is not None:
     st.subheader("🧠 Real-time AI Analysis")
     with st.spinner("Processing image through vision pipeline..."):
       try:
-        # Prepare file payload safely from raw bytes
         files = {"file": (image_filename, selected_image_bytes, "image/jpeg")}
         response = requests.post("http://127.0.0.1:8000/predict", files=files)
 
@@ -102,53 +98,37 @@ if selected_image_bytes is not None:
 
           species_name = data.get("species", "N/A")
           species_conf = data.get("species_conf", "0%")
-
-          full_health_diagnosis = data.get("health_diagnosis", "Unknown")
+          full_health_diagnosis = str(
+              data.get("health_diagnosis", "Unknown")
+          ).strip()
           health_conf_raw = data.get("health_conf", "0%")
 
-          health_conf_match = re.search(r"([\d\.]+)", str(health_conf_raw))
-          health_conf_val = (
-              float(health_conf_match.group(1)) if health_conf_match else 0.0
-          )
+          # Robust Health Evaluation: Check if 'healthy' is anywhere in the return string
+          is_healthy = "healthy" in full_health_diagnosis.lower()
 
-          raw_status = (
-              full_health_diagnosis.split("-")[-1].strip()
-              if "-" in full_health_diagnosis
-              else full_health_diagnosis
-          )
-
-          if raw_status.lower() == "healthy" and health_conf_val < 50.0:
-            health_status = "Unhealthy"
-            is_unhealthy = True
-          elif raw_status.lower() == "healthy":
+          if is_healthy:
             health_status = "Healthy"
-            is_unhealthy = False
-          else:
-            health_status = "Unhealthy"
-            is_unhealthy = True
-
-          if is_unhealthy:
-            status_color = "#D32F2F"
-            bg_badge_color = "#FFEBEE"
-            watering_plan = (
-                "⚠️ **Adjusted Watering Schedule:** Stress detected. Check soil"
-                " moisture manually before watering."
-            )
-            improvement_plan = (
-                "⚠️ **Targeted Action Required:** Leaf abnormalities or low"
-                " prediction confidence detected.\n\n1. Inspect leaf undersides"
-                " for active pests.\n2. Prune heavily damaged tissue.\n3."
-                " Ensure indirect sunlight and clean water drainage."
-            )
-          else:
             status_color = "#2E7D32"
             bg_badge_color = "#E8F5E9"
             watering_plan = data.get(
                 "watering_assessment",
-                "Maintain regular moisture monitoring.",
+                "Maintain regular moisture monitoring based on plant species.",
             )
             improvement_plan = data.get(
-                "improvement_plan", "No immediate treatment needed."
+                "improvement_plan",
+                "Plant appears healthy! Maintain normal light and care.",
+            )
+          else:
+            health_status = full_health_diagnosis
+            status_color = "#D32F2F"
+            bg_badge_color = "#FFEBEE"
+            watering_plan = data.get(
+                "watering_assessment",
+                "⚠️ **Adjusted Schedule:** Stress detected. Inspect soil moisture before watering.",
+            )
+            improvement_plan = data.get(
+                "improvement_plan",
+                "⚠️ **Action Needed:** Check leaf undersides for pests and isolate plant.",
             )
 
           m1, m2 = st.columns(2)
