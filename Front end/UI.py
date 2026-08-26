@@ -110,11 +110,13 @@ if selected_image_bytes is not None:
             is_healthy = "healthy" in full_health_diagnosis.lower()
 
           if is_healthy:
-            health_status = "Healthy ✅"
+            health_status = "Healthy"
+            health_detail = ""
             status_color = "#2E7D32"
             bg_badge_color = "#E8F5E9"
           else:
-            health_status = full_health_diagnosis
+            health_status = "Unhealthy"
+            health_detail = full_health_diagnosis
             status_color = "#D32F2F"
             bg_badge_color = "#FFEBEE"
 
@@ -136,11 +138,16 @@ if selected_image_bytes is not None:
             )
 
           with m2:
+            detail_line = (
+                f'<div style="font-size: 0.82rem; color: #888; margin: 2px 0 6px 0;">{health_detail}</div>'
+                if health_detail else ""
+            )
             st.markdown(
                 f"""
                         <div style="background-color: #F8F9FA; padding: 16px 18px; border-radius: 10px; border-left: 5px solid {status_color}; min-height: 150px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div style="font-size: 0.95rem; color: #555555; font-weight: 600;">🩺 Health Diagnosis</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: {status_color}; margin: 6px 0; word-wrap: break-word;">{health_status}</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: {status_color}; margin: 6px 0 2px 0;">{health_status}</div>
+                            {detail_line}
                             <div style="font-size: 0.85rem; color: {status_color}; background-color: {bg_badge_color}; padding: 4px 10px; border-radius: 15px; width: fit-content; font-weight: 600;">↑ Confidence: {health_conf_raw}</div>
                         </div>
                         """,
