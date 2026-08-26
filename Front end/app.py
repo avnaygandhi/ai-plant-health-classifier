@@ -131,13 +131,27 @@ def load_labels():
     ]
 
 
+_LEAFSNAP_25 = [
+    "Abies Concolor", "Abies Nordmanniana", "Acer Campestre", "Acer Ginnala",
+    "Acer Griseum", "Acer Negundo", "Acer Palmatum", "Acer Pensylvanicum",
+    "Acer Platanoides", "Acer Pseudoplatanus", "Acer Rubrum", "Acer Saccharinum",
+    "Acer Saccharum", "Aesculus Flava", "Aesculus Glabra", "Aesculus Hippocastamon",
+    "Aesculus Pavi", "Ailanthus Altissima", "Albizia Julibrissin",
+    "Amelanchier Arborea", "Amelanchier Canadensis", "Amelanchier Laevis",
+    "Asimina Triloba", "Betula Alleghaniensis", "Betula Jacqemontii",
+]
+
+SPECIES_NOT_FOUND = "Sorry, species not found in our database"
+SPECIES_CONF_THRESHOLD = 40.0  # percent; below this we report "not found"
+
+
 def load_species_labels():
     leafsnap_dir = BASE_DIR / "leafsnap_data" / "train"
     if leafsnap_dir.exists():
         names = sorted(p.name for p in leafsnap_dir.iterdir() if p.is_dir())
         if names:
             return [n.replace("_", " ").title() for n in names[:NUM_SPECIES_CLASSES]]
-    return [f"Species {i + 1}" for i in range(NUM_SPECIES_CLASSES)]
+    return _LEAFSNAP_25
 
 
 CLASS_LABELS = load_labels()
@@ -217,15 +231,17 @@ async def predict(file: UploadFile = File(...)):
                 species_logits = species_model(input_tensor)
                 species_probs = F.softmax(species_logits, dim=1)
                 s_conf, s_idx = torch.max(species_probs, 1)
-                species_label = (
-                    SPECIES_LABELS[s_idx.item()]
-                    if s_idx.item() < len(SPECIES_LABELS)
-                    else "Unknown Plant"
-                )
-                species_confidence = f"{s_conf.item() * 100:.2f}%"
+                s_conf_pct = s_conf.item() * 100
+                if s_conf_pct < SPECIES_CONF_THRESHOLD:
+                    species_label = SPECIES_NOT_FOUND
+                elif s_idx.item() < len(SPECIES_LABELS):
+                    species_label = SPECIES_LABELS[s_idx.item()]
+                else:
+                    species_label = SPECIES_NOT_FOUND
+                species_confidence = f"{s_conf_pct:.2f}%"
             else:
-                species_label = CLASS_LABELS[h_idx.item()].split()[0]
-                species_confidence = f"{h_conf.item() * 100:.2f}%"
+                species_label = SPECIES_NOT_FOUND
+                species_confidence = "N/A"
 
         health_label = (
             CLASS_LABELS[h_idx.item()]

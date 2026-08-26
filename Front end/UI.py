@@ -126,32 +126,30 @@ if selected_image_bytes is not None:
           m1, m2 = st.columns(2)
 
           with m1:
-            st.markdown(
-                f"""
-                        <div style="background-color: #F8F9FA; padding: 16px 18px; border-radius: 10px; border-left: 5px solid #2E7D32; min-height: 150px; display: flex; flex-direction: column; justify-content: space-between;">
-                            <div style="font-size: 0.95rem; color: #555555; font-weight: 600;">🌿 Predicted Species</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: #111111; margin: 6px 0; word-wrap: break-word;">{species_name}</div>
-                            <div style="font-size: 0.85rem; color: #2E7D32; background-color: #E8F5E9; padding: 4px 10px; border-radius: 15px; width: fit-content; font-weight: 600;">↑ Confidence: {species_conf}</div>
-                        </div>
-                        """,
-                unsafe_allow_html=True,
+            species_conf_display = (
+                "" if species_name.startswith("Sorry") else
+                f'<div style="font-size:0.85rem;color:#2E7D32;background-color:#E8F5E9;padding:4px 10px;border-radius:15px;width:fit-content;font-weight:600;">↑ Confidence: {species_conf}</div>'
+            )
+            st.html(
+                f'<div style="background-color:#F8F9FA;padding:16px 18px;border-radius:10px;border-left:5px solid #2E7D32;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;">'
+                f'<div style="font-size:0.95rem;color:#555555;font-weight:600;">🌿 Predicted Species</div>'
+                f'<div style="font-size:1.1rem;font-weight:700;color:#111111;margin:6px 0;word-wrap:break-word;">{species_name}</div>'
+                f'{species_conf_display}'
+                f'</div>'
             )
 
           with m2:
             detail_line = (
-                f'<div style="font-size: 0.82rem; color: #888; margin: 2px 0 6px 0;">{health_detail}</div>'
+                f'<div style="font-size:0.82rem;color:#888;margin:2px 0 6px 0;">{health_detail}</div>'
                 if health_detail else ""
             )
-            st.markdown(
-                f"""
-                        <div style="background-color: #F8F9FA; padding: 16px 18px; border-radius: 10px; border-left: 5px solid {status_color}; min-height: 150px; display: flex; flex-direction: column; justify-content: space-between;">
-                            <div style="font-size: 0.95rem; color: #555555; font-weight: 600;">🩺 Health Diagnosis</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: {status_color}; margin: 6px 0 2px 0;">{health_status}</div>
-                            {detail_line}
-                            <div style="font-size: 0.85rem; color: {status_color}; background-color: {bg_badge_color}; padding: 4px 10px; border-radius: 15px; width: fit-content; font-weight: 600;">↑ Confidence: {health_conf_raw}</div>
-                        </div>
-                        """,
-                unsafe_allow_html=True,
+            st.html(
+                f'<div style="background-color:#F8F9FA;padding:16px 18px;border-radius:10px;border-left:5px solid {status_color};min-height:150px;display:flex;flex-direction:column;justify-content:space-between;">'
+                f'<div style="font-size:0.95rem;color:#555555;font-weight:600;">🩺 Health Diagnosis</div>'
+                f'<div style="font-size:1.25rem;font-weight:700;color:{status_color};margin:6px 0 2px 0;">{health_status}</div>'
+                f'{detail_line}'
+                f'<div style="font-size:0.85rem;color:{status_color};background-color:{bg_badge_color};padding:4px 10px;border-radius:15px;width:fit-content;font-weight:600;">↑ Confidence: {health_conf_raw}</div>'
+                f'</div>'
             )
 
           st.divider()
