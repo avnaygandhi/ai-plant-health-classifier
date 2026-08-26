@@ -145,6 +145,24 @@ NUM_CLASSES = 38
 NUM_SPECIES_CLASSES = 25
 SPECIES_LABELS = load_species_labels()
 
+# Labels that represent a healthy plant.
+# Includes explicit "Healthy" labels AND plain-leaf labels for species that
+# only have one class in PlantVillage (i.e. they are healthy by definition).
+HEALTHY_LABELS = {lbl.lower() for lbl in CLASS_LABELS if "healthy" in lbl.lower()} | {
+    "apple leaf",        # healthy apple in this label set
+    "bell_pepper leaf",  # healthy pepper (Pepper Bell Healthy also exists; both count)
+    "blueberry leaf",    # PlantVillage only has one blueberry class → healthy
+    "cherry leaf",       # healthy cherry variant
+    "peach leaf",        # healthy peach variant
+    "potato leaf",       # healthy potato variant
+    "raspberry leaf",    # PlantVillage only has one raspberry class → healthy
+    "soyabean leaf",     # healthy soybean variant
+    "soybean leaf",      # healthy soybean variant
+    "strawberry leaf",   # healthy strawberry variant
+    "tomato leaf",       # healthy tomato variant
+    "grape leaf",        # healthy grape variant
+}
+
 # --- 3. INITIALIZE MODELS & LOAD CHECKPOINTS ---
 health_model = PlantHealthConvNeXt(num_classes=NUM_CLASSES).to(device)
 if HEALTH_MODEL_PATH.exists():
@@ -215,18 +233,38 @@ async def predict(file: UploadFile = File(...)):
             else "Unknown Condition"
         )
         health_confidence = f"{h_conf.item() * 100:.2f}%"
+        is_healthy = health_label.lower() in HEALTHY_LABELS
+
+        if is_healthy:
+            watering_msg = (
+                "Soil moisture is balanced. Maintain your regular watering schedule "
+                "and adjust based on seasonal conditions."
+            )
+            improvement_msg = (
+                "Plant appears healthy! Continue routine care: ensure adequate light, "
+                "good drainage, and monitor for early signs of stress."
+            )
+        else:
+            watering_msg = (
+                "⚠️ Stress detected. Check soil moisture manually before watering — "
+                "over-watering can worsen disease symptoms."
+            )
+            improvement_msg = (
+                f"⚠️ Condition detected: {health_label}.\n\n"
+                "1. Inspect leaf undersides for pests or fungal growth.\n"
+                "2. Remove and dispose of heavily affected leaves.\n"
+                "3. Improve air circulation and avoid wetting foliage when watering.\n"
+                "4. Consider an appropriate fungicide or pesticide treatment."
+            )
 
         return {
             "species": species_label,
             "species_conf": species_confidence,
             "health_diagnosis": health_label,
             "health_conf": health_confidence,
-            "watering_assessment": (
-                "Soil is balanced. Maintain regular watering schedule based on moisture levels."
-            ),
-            "improvement_plan": (
-                "No immediate treatment required. Continue routine monitoring."
-            ),
+            "is_healthy": is_healthy,
+            "watering_assessment": watering_msg,
+            "improvement_plan": improvement_msg,
             "status": "success",
         }
 

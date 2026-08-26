@@ -98,38 +98,28 @@ if selected_image_bytes is not None:
 
           species_name = data.get("species", "N/A")
           species_conf = data.get("species_conf", "0%")
-          full_health_diagnosis = str(
-              data.get("health_diagnosis", "Unknown")
-          ).strip()
+          full_health_diagnosis = str(data.get("health_diagnosis", "Unknown")).strip()
           health_conf_raw = data.get("health_conf", "0%")
 
-          # Robust Health Evaluation: Check if 'healthy' is anywhere in the return string
-          is_healthy = "healthy" in full_health_diagnosis.lower()
+          # Trust the authoritative is_healthy flag from the API.
+          # Fall back to string check only if the field is absent (old server).
+          api_is_healthy = data.get("is_healthy")
+          if api_is_healthy is not None:
+            is_healthy = bool(api_is_healthy)
+          else:
+            is_healthy = "healthy" in full_health_diagnosis.lower()
 
           if is_healthy:
-            health_status = "Healthy"
+            health_status = "Healthy ✅"
             status_color = "#2E7D32"
             bg_badge_color = "#E8F5E9"
-            watering_plan = data.get(
-                "watering_assessment",
-                "Maintain regular moisture monitoring based on plant species.",
-            )
-            improvement_plan = data.get(
-                "improvement_plan",
-                "Plant appears healthy! Maintain normal light and care.",
-            )
           else:
             health_status = full_health_diagnosis
             status_color = "#D32F2F"
             bg_badge_color = "#FFEBEE"
-            watering_plan = data.get(
-                "watering_assessment",
-                "⚠️ **Adjusted Schedule:** Stress detected. Inspect soil moisture before watering.",
-            )
-            improvement_plan = data.get(
-                "improvement_plan",
-                "⚠️ **Action Needed:** Check leaf undersides for pests and isolate plant.",
-            )
+
+          watering_plan = data.get("watering_assessment", "")
+          improvement_plan = data.get("improvement_plan", "")
 
           m1, m2 = st.columns(2)
 
