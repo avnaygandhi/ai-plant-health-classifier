@@ -94,7 +94,29 @@ if selected_image_bytes is not None:
 
         if response.status_code == 200:
           data = response.json()
+
+          # ── Artificial plant gate ──────────────────────────────────────────
+          if data.get("is_artificial"):
+            fr_conf = data.get("fake_real_conf", "")
+            conf_str = f" ({fr_conf} confidence)" if fr_conf else ""
+            st.warning(
+                f"🪴 **Artificial plant detected{conf_str}.**\n\n"
+                "This looks like a fake or plastic plant. "
+                "Health and species analysis is not applicable."
+            )
+            st.stop()
+
           st.success("Analysis Complete!")
+
+          # ── Real-plant badge (model available + confident) ─────────────────
+          fr_conf = data.get("fake_real_conf")
+          if fr_conf:
+            st.markdown(
+                f'<div style="display:inline-block;background:#E8F5E9;color:#2E7D32;'
+                f'padding:4px 12px;border-radius:15px;font-size:0.82rem;font-weight:600;'
+                f'margin-bottom:10px;">✅ Real plant confirmed · {fr_conf}</div>',
+                unsafe_allow_html=True,
+            )
 
           species_name = data.get("species", "N/A")
           species_conf = data.get("species_conf", "0%")

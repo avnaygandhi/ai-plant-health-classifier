@@ -11,8 +11,10 @@ from torchvision import transforms
 from torchvision.models import (
     ConvNeXt_Tiny_Weights,
     EfficientNet_B0_Weights,
+    ResNet50_Weights,
     convnext_tiny,
     efficientnet_b0,
+    resnet50,
 )
 import yaml
 
@@ -36,10 +38,12 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 # Define local target paths (Path objects)
 HEALTH_MODEL_PATH = MODELS_DIR / "best_health_model_v3.pth"
 SPECIES_MODEL_PATH = MODELS_DIR / "species_efficientnet_b0_full.pth"
+FAKE_REAL_MODEL_PATH = MODELS_DIR / "fake_vs_real_resnet50.pth"
 
 # AWS S3 Direct Download URLs
 HEALTH_S3_URL = "https://plant-ai-weights-avnay.s3.ap-southeast-1.amazonaws.com/best_health_model_v3.pth"
 SPECIES_S3_URL = "https://plant-ai-weights-avnay.s3.ap-southeast-1.amazonaws.com/species_efficientnet_b0_full.pth"
+FAKE_REAL_S3_URL = "https://plant-ai-weights-avnay.s3.ap-southeast-1.amazonaws.com/fake_vs_real_resnet50.pth" 
 
 
 def download_s3_weights():
@@ -61,6 +65,15 @@ def download_s3_weights():
         except Exception as e:
             print(f"ℹ️ Species model not yet available on S3 (will use fallback).")
 
+    # 3. Download Fake/Real Model from S3 if missing locally
+    if not FAKE_REAL_MODEL_PATH.exists() and FAKE_REAL_S3_URL:
+        print("☁️ Fetching Fake/Real Model from AWS S3...")
+        try:
+            urllib.request.urlretrieve(FAKE_REAL_S3_URL, FAKE_REAL_MODEL_PATH)
+            print("✅ Fake/Real Model downloaded from AWS S3 successfully!")
+        except Exception as e:
+            print(f"⚠️ Failed to download Fake/Real Model from S3: {e}")
+
 
 download_s3_weights()
 
@@ -79,6 +92,25 @@ class PlantHealthConvNeXt(nn.Module):
 
     def forward(self, x):
         return self.backbone(x)
+
+
+def build_fake_real_model():
+    """ResNet-50 head matching the fake_vs_real training architecture."""
+    model = resnet50(weights=ResNet50_Weights.DEFAULT)
+    for param in model.parameters():
+        param.requires_grad = False
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Sequential(
+        nn.Linear(num_ftrs, 256),
+        nn.BatchNorm1d(256),
+        nn.ReLU(),
+        nn.Dropout(0.5),
+        nn.Linear(256, 64),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        nn.Linear(64, 2),
+    )
+    return model
 
 
 def build_species_model(num_classes=25):
@@ -177,7 +209,24 @@ HEALTHY_LABELS = {lbl.lower() for lbl in CLASS_LABELS if "healthy" in lbl.lower(
     "grape leaf",        # healthy grape variant
 }
 
+FAKE_REAL_CONF_THRESHOLD = 70.0  # below this, skip the fake/real gate
+
 # --- 3. INITIALIZE MODELS & LOAD CHECKPOINTS ---
+fake_real_model = build_fake_real_model().to(device)
+if FAKE_REAL_MODEL_PATH.exists():
+    try:
+        fake_real_model.load_state_dict(
+            torch.load(FAKE_REAL_MODEL_PATH, map_location=device, weights_only=True)
+        )
+        fake_real_model.eval()
+        print(f"✅ Loaded Fake/Real Model from {FAKE_REAL_MODEL_PATH}")
+    except Exception as e:
+        print(f"⚠️ Error loading Fake/Real Model state_dict: {e}")
+        fake_real_model = None
+else:
+    print("ℹ️ Fake/Real model checkpoint missing — gate disabled.")
+    fake_real_model = None
+
 health_model = PlantHealthConvNeXt(num_classes=NUM_CLASSES).to(device)
 if HEALTH_MODEL_PATH.exists():
     try:
@@ -223,6 +272,33 @@ async def predict(file: UploadFile = File(...)):
         input_tensor = transform(image).unsqueeze(0).to(device)
 
         with torch.no_grad():
+            # --- Fake / Real gate (runs first) ---
+            is_artificial = False
+            fake_real_confidence = None
+            if fake_real_model is not None:
+                fr_logits = fake_real_model(input_tensor)
+                fr_probs = F.softmax(fr_logits, dim=1)
+                fr_conf, fr_idx = torch.max(fr_probs, 1)
+                fr_conf_pct = fr_conf.item() * 100
+                # class 0 = fake, class 1 = real
+                if fr_idx.item() == 0 and fr_conf_pct >= FAKE_REAL_CONF_THRESHOLD:
+                    is_artificial = True
+                fake_real_confidence = f"{fr_conf_pct:.2f}%"
+
+            if is_artificial:
+                return {
+                    "is_artificial": True,
+                    "fake_real_conf": fake_real_confidence,
+                    "species": "N/A",
+                    "species_conf": "N/A",
+                    "health_diagnosis": "N/A",
+                    "health_conf": "N/A",
+                    "is_healthy": None,
+                    "watering_assessment": "This appears to be an artificial plant — no care needed!",
+                    "improvement_plan": "No health analysis performed (artificial plant detected).",
+                    "status": "artificial",
+                }
+
             health_logits = health_model(input_tensor)
             health_probs = F.softmax(health_logits, dim=1)
             h_conf, h_idx = torch.max(health_probs, 1)
@@ -274,6 +350,8 @@ async def predict(file: UploadFile = File(...)):
             )
 
         return {
+            "is_artificial": False,
+            "fake_real_conf": fake_real_confidence,
             "species": species_label,
             "species_conf": species_confidence,
             "health_diagnosis": health_label,
