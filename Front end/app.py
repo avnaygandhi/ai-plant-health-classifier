@@ -95,20 +95,16 @@ class PlantHealthConvNeXt(nn.Module):
 
 
 def build_fake_real_model():
-    """ResNet-50 head matching the fake_vs_real training architecture."""
+    """ResNet-50 head matching the original fake_vs_real training architecture."""
     model = resnet50(weights=ResNet50_Weights.DEFAULT)
     for param in model.parameters():
         param.requires_grad = False
     num_ftrs = model.fc.in_features
     model.fc = nn.Sequential(
         nn.Linear(num_ftrs, 256),
-        nn.BatchNorm1d(256),
         nn.ReLU(),
-        nn.Dropout(0.5),
-        nn.Linear(256, 64),
-        nn.ReLU(),
-        nn.Dropout(0.3),
-        nn.Linear(64, 2),
+        nn.Dropout(0.4),
+        nn.Linear(256, 2),
     )
     return model
 
@@ -222,6 +218,7 @@ if FAKE_REAL_MODEL_PATH.exists():
         print(f"✅ Loaded Fake/Real Model from {FAKE_REAL_MODEL_PATH}")
     except Exception as e:
         print(f"⚠️ Error loading Fake/Real Model state_dict: {e}")
+        print("⚠️ Fake/Real gate DISABLED — architecture mismatch or corrupt file.")
         fake_real_model = None
 else:
     print("ℹ️ Fake/Real model checkpoint missing — gate disabled.")
